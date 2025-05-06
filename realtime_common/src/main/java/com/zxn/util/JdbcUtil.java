@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * @author Felix
- * @date 2025/5/04
+ * @date 2025/5/4
  * 通过JDBC操作MySQL数据库
  */
 public class JdbcUtil {

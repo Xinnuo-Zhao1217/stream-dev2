@@ -5,7 +5,7 @@ import com.zxn.constant.Constant;
 
 /**
  * @author Felix
- * @date 2025/5/04
+ * @date 2025/5/4
  * FlinkSQL操作的工具类
  */
 public class SQLUtil {

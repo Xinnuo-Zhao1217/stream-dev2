@@ -13,7 +13,7 @@ import java.util.Properties;
 
 /**
  * @author Felix
- * @date 2025/5/04
+ * @date 2025/5/4
  * 获取相关Source的工具类
  */
 public class FlinkSourceUtil {

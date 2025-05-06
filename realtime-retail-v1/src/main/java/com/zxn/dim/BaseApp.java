@@ -29,7 +29,7 @@ import org.apache.hadoop.hbase.client.Connection;
 /**
  * @Package com.zxn.stream.realtime.v1.app.bim.BaseApp
  * @Author xinnuo.zhao
- * @Date 2025/4/11 9:34
+ * @Date 2025/5/4 9:34
  * @description: BaseApp
  */
 public class BaseApp {

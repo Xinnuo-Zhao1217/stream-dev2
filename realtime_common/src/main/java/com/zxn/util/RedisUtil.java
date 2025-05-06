@@ -12,7 +12,7 @@ import redis.clients.jedis.JedisPoolConfig;
 
 /**
  * @author Felix
- * @date 2025/5/04
+ * @date 2025/5/4
  * 操作Redis的工具类
  * 旁路缓存
  *      思路：先从缓存中获取维度数据，如果获取到了(缓存命中)，直接将缓存中的维度返回；如果在缓存中没有找到要关联的维度，发送请求到HBase中查询维度，

@@ -16,10 +16,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+
 /**
- * @author Felix
- * @date 2025/5/04
- * 操作HBase的工具类
+ * @Package com.bg.common.util.HBaseUtil
+ * @Author  xinyi.jiao
+ * @Date 2025/4/8 13:56
+ * @description: 操作HBase工具类
  */
 public class HBaseUtil {
     //获取Hbase连接
@@ -106,16 +108,7 @@ public class HBaseUtil {
         }
     }
 
-    /**
-     * 向表中put数据
-     *
-     * @param hbaseConn 连接对象
-     * @param namespace 表空间
-     * @param tableName 表名
-     * @param rowKey    rowkey
-     * @param family    列族
-     * @param jsonObj   要put的数据
-     */
+    //    向表中添加数据
     public static void putRow(Connection hbaseConn, String namespace, String tableName, String rowKey, String family, JSONObject jsonObj) {
         TableName tableNameObj = TableName.valueOf(namespace, tableName);
         try (Table table = hbaseConn.getTable(tableNameObj)) {
@@ -145,82 +138,63 @@ public class HBaseUtil {
             throw new RuntimeException(e);
         }
     }
+public static <T>T getRow(Connection hbaseConn, String namespace, String tableName, String rowKey,Class<T> clz,boolean... isUnderlineToCamel){
+    boolean defaultIsUToC = false;  // 默认不执行下划线转驼峰
 
-    /**
-     * 根据rowkey从Hbase表中查询一行数据
-     * @param hbaseConn             hbase连接对象
-     * @param namespace             表空间
-     * @param tableName             表名
-     * @param rowKey                rowkey
-     * @param clz                   将查询的一行数据 封装的类型
-     * @param isUnderlineToCamel    是否将下划线转换为驼峰命名
-     * @return
-     * @param <T>
-     */
-    public static <T>T getRow(Connection hbaseConn, String namespace, String tableName, String rowKey,Class<T> clz,boolean... isUnderlineToCamel){
-        boolean defaultIsUToC = false;  // 默认不执行下划线转驼峰
-
-        if (isUnderlineToCamel.length > 0) {
-            defaultIsUToC = isUnderlineToCamel[0];
-        }
-
-        TableName tableNameObj = TableName.valueOf(namespace, tableName);
-        try (Table table = hbaseConn.getTable(tableNameObj)){
-            Get get = new Get(Bytes.toBytes(rowKey));
-            Result result = table.get(get);
-            List<Cell> cells = result.listCells();
-            if(cells != null && cells.size() > 0){
-                //定义一个对象，用于封装查询出来的一行数据
-                T obj = clz.newInstance();
-                for (Cell cell : cells) {
-                    String columnName = Bytes.toString(CellUtil.cloneQualifier(cell));
-                    String columnValue = Bytes.toString(CellUtil.cloneValue(cell));
-                    if(defaultIsUToC){
-                        columnName = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL,columnName);
-                    }
-                    BeanUtils.setProperty(obj,columnName,columnValue);
-                }
-                return obj;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return null;
+    if (isUnderlineToCamel.length > 0) {
+        defaultIsUToC = isUnderlineToCamel[0];
     }
 
-    /**
-     * 以异步的方式 从HBase维度表中查询维度数据
-     * @param asyncConn     异步操作HBase的连接
-     * @param namespace     表空间
-     * @param tableName     表名
-     * @param rowKey        rowkey
-     * @return
-     */
+    TableName tableNameObj = TableName.valueOf(namespace, tableName);
+    try (Table table = hbaseConn.getTable(tableNameObj)){
+        Get get = new Get(Bytes.toBytes(rowKey));
+        Result result = table.get(get);
+        List<Cell> cells = result.listCells();
+        if(cells != null && cells.size() > 0){
+            //定义一个对象，用于封装查询出来的一行数据
+            T obj = clz.newInstance();
+            for (Cell cell : cells) {
+                String columnName = Bytes.toString(CellUtil.cloneQualifier(cell));
+                String columnValue = Bytes.toString(CellUtil.cloneValue(cell));
+                if(defaultIsUToC){
+                    columnName = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL,columnName);
+                }
+                BeanUtils.setProperty(obj,columnName,columnValue);
+            }
+            return obj;
+        }
+    } catch (Exception e) {
+        throw new RuntimeException(e);
+    }
+    return null;
+}
+
+
     public static JSONObject readDimAsync(AsyncConnection asyncConn,String namespace, String tableName, String rowKey){
-        try {
-            TableName tableNameObj = TableName.valueOf(namespace, tableName);
-            AsyncTable<AdvancedScanResultConsumer> asyncTable = asyncConn.getTable(tableNameObj);
-            Get get = new Get(Bytes.toBytes(rowKey));
-            Result result = asyncTable.get(get).get();
-            List<Cell> cells = result.listCells();
-            if(cells != null && cells.size() > 0){
-                JSONObject jsonObj = new JSONObject();
-                for (Cell cell : cells) {
-                    String columnName = Bytes.toString(CellUtil.cloneQualifier(cell));
-                    String columnValue = Bytes.toString(CellUtil.cloneValue(cell));
-                    jsonObj.put(columnName,columnValue);
-                }
-                return jsonObj;
+    try {
+        TableName tableNameObj = TableName.valueOf(namespace, tableName);
+        AsyncTable<AdvancedScanResultConsumer> asyncTable = asyncConn.getTable(tableNameObj);
+        Get get = new Get(Bytes.toBytes(rowKey));
+        Result result = asyncTable.get(get).get();
+        List<Cell> cells = result.listCells();
+        if(cells != null && cells.size() > 0){
+            JSONObject jsonObj = new JSONObject();
+            for (Cell cell : cells) {
+                String columnName = Bytes.toString(CellUtil.cloneQualifier(cell));
+                String columnValue = Bytes.toString(CellUtil.cloneValue(cell));
+                jsonObj.put(columnName,columnValue);
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            return jsonObj;
         }
-        return null;
+    } catch (Exception e) {
+        throw new RuntimeException(e);
     }
+    return null;
+}
 
     public static void main(String[] args) throws Exception {
         Connection hBaseConnection = getHBaseConnection();
-        JSONObject jsonObj = getRow(hBaseConnection, Constant.HBASE_NAMESPACE, "dim_trademark", "1", JSONObject.class);
+        JSONObject jsonObj = getRow(hBaseConnection, Constant.HBASE_NAMESPACE, "dim_base_trademark", "1", JSONObject.class);
         System.out.println(jsonObj);
         closeHBaseConnection(hBaseConnection);
     }

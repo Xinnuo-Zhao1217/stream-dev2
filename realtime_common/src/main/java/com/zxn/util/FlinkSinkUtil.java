@@ -19,7 +19,7 @@ import java.util.Properties;
 
 /**
  * @author Felix
- * @date 2024/5/29
+ * @date 2025/5/4
  * 获取相关Source的工具类
  */
 public class FlinkSinkUtil {
@@ -69,7 +69,7 @@ public class FlinkSinkUtil {
         DorisSink<String> sink = DorisSink.<String>builder()
                 .setDorisReadOptions(DorisReadOptions.builder().build())
                 .setDorisOptions(DorisOptions.builder() // 设置 doris 的连接参数
-                        .setFenodes("10.39.48.33:8030")
+                        .setFenodes("10.160.60.14:8030")
                         .setTableIdentifier(Constant.DORIS_DATABASE + "." + tableName)
                         .setUsername("admin")
                         .setPassword("zh1028,./")

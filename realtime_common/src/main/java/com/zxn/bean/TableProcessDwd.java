@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 /**
  * @Package com.zxn.retail.v1.realtime.bean.TableProcessDwd
  * @Author xinnuo.zhao
- * @Date 2025/5/04 14:05
+ * @Date 2025/5/5 14:05
  * @description: TableProcessDwd
  */
 
