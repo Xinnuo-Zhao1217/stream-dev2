@@ -11,6 +11,7 @@
     <modules>
         <module>realtime_common</module>
         <module>realtime-retail-v1</module>
+        <module>stream-realtime</module>
     </modules>
     <properties>
         <java.version>1.8</java.version>

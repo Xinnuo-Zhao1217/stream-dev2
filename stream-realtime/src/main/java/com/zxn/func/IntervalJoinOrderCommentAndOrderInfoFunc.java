@@ -1,0 +1,23 @@
+package com.zxn.func;
+
+import com.alibaba.fastjson.JSONObject;
+import org.apache.flink.streaming.api.functions.co.ProcessJoinFunction;
+import org.apache.flink.util.Collector;
+
+/**
+ * @Package com.zxn.func.IntervalJoinOrderCommentAndOrderInfoFunc
+ * @Author zhao.xinnuo
+ * @Date 2025/5/7 11:23
+ * @description: IntervalJoinOrderCommentAndOrderInfoFunc
+ */
+public class IntervalJoinOrderCommentAndOrderInfoFunc extends ProcessJoinFunction<JSONObject,JSONObject,JSONObject> {
+    @Override
+    public void processElement(JSONObject comment, JSONObject info, ProcessJoinFunction<JSONObject, JSONObject, JSONObject>.Context ctx, Collector<JSONObject> out){
+        JSONObject enrichedComment = (JSONObject)comment.clone();
+
+        for (String key : info.keySet()) {
+            enrichedComment.put("info_" + key, info.get(key));
+        }
+        out.collect(enrichedComment);
+    }
+}
