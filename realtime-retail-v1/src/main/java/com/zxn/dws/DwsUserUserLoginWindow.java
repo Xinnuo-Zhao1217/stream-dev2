@@ -34,7 +34,8 @@ import org.apache.flink.util.Collector;
  * @Package com.zxn.dws.DwsUserUserLoginWindow
  * @Author zhao.xinnuo
  * @Date 2025/5/5 15:09
- * @description: DwsUserUserLoginWindow
+ * @description: 实现了一个完整的 Flink 流处理作业，从 Kafka 读取用户登录数据，
+ * 经过一系列处理后，将新用户和回流用户的统计结果按窗口聚合，并写入 Doris 数据库。
  */
 public class DwsUserUserLoginWindow {
     public static void main(String[] args) throws Exception {

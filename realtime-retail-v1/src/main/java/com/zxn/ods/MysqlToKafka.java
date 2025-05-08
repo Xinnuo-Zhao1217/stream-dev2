@@ -12,7 +12,8 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
  * @Package com.zxn.ods.MysqlToKafka
  * @Author zhao.xinnuo
  * @Date 2025/5/5 15:11
- * @description: MysqlToKafka
+ * @description: 实现了从 MySQL 数据库到 Kafka 消息队列的实时数据同步，能让 Kafka 接收 MySQL
+ * 数据库的变更数据，为后续的数据处理和分析提供支持。
  */
 public class MysqlToKafka {
     public static void main(String[] args) throws Exception {
@@ -29,9 +30,9 @@ public class MysqlToKafka {
         mySQLSource.print();
 
         // 使用自定义工具类获取Kafka sink，指定Kafka主题为"xinnuo_zhao_db"
-        KafkaSink<String> topic_db = FlinkSinkUtil.getKafkaSink("xinnuo_zhao_db1");
+//        KafkaSink<String> topic_db = FlinkSinkUtil.getKafkaSink("xinnuo_zhao_db1");
 //        // 将MySQL数据源的数据写入到指定的Kafka主题
-        mySQLSource.sinkTo(topic_db);
+//        mySQLSource.sinkTo(topic_db);
 
         // 执行Flink作业，作业名称为"Print MySQL Snapshot + Binlog"
         env.execute("Print MySQL Snapshot + Binlog");

@@ -13,7 +13,7 @@ import java.time.Duration;
  * @Package com.zxn.dwd.DwdTradeOrderDetail
  * @Author zhao.xinnuo
  * @Date 2025/5/4 20:46
- * @description: DwdTradeOrderDetail
+ * @description: 是从 Kafka 和 HBase 数据源中提取订单相关数据，经过一系列的处理和转换后，将处理结果写入到另一个 Kafka 主题中。
  */
 public class DwdTradeOrderDetail {
     public static void main(String[] args) throws Exception {

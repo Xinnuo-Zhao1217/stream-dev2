@@ -11,7 +11,7 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
  * @Package com.zxn.dwd.DwdTradeCartAdd
  * @Author zhao.xinnuo
  * @Date 2025/5/4 20:44
- * @description: DwdTradeCartAdd
+ * @description: 从 Kafka 主题中读取购物车相关的数据，经过处理后再将数据写入到另一个 Kafka 主题中
  */
 public class DwdTradeCartAdd {
     public static void main(String[] args) throws Exception {

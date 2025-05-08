@@ -1,14 +1,14 @@
-package com.zxn.func;
+package com.zxn.util;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.flink.streaming.api.functions.co.ProcessJoinFunction;
 import org.apache.flink.util.Collector;
 
 /**
- * @Package com.zxn.func.IntervalJoinOrderCommentAndOrderInfoFunc
- * @Author zhao.xinnuo
- * @Date 2025/5/7 11:23
- * @description: IntervalJoinOrderCommentAndOrderInfoFunc
+ * @Package com.retailersv1.func.IntervalJoinOrderCommentAndOrderInfoFunc
+ * @Author xinyi.jiao
+ * @Date 2025/3/16 16:28
+ * @description: orderComment Join orderInfo Msg
  */
 public class IntervalJoinOrderCommentAndOrderInfoFunc extends ProcessJoinFunction<JSONObject,JSONObject,JSONObject> {
     @Override

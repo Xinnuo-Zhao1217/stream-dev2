@@ -30,7 +30,8 @@ import org.apache.hadoop.hbase.client.Connection;
  * @Package com.zxn.stream.realtime.v1.app.bim.BaseApp
  * @Author xinnuo.zhao
  * @Date 2025/5/4 9:34
- * @description: BaseApp
+ * @description: 实现了从 Kafka 和 MySQL 读取数据，根据数据操作类型对数据进行处理和 HBase 表操作，
+ * 并将处理后的数据写入 HBase 的功能
  */
 public class BaseApp {
     public static void main(String[] args) throws Exception {

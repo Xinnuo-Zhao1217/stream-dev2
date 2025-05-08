@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * @Package com.zxn.dws.DwsTradeSkuOrderWindow
  * @Author zhao.xinnuo
  * @Date 2025/5/5 15:04
- * @description: DwsTradeSkuOrderWindow
+ * @description: 对电商交易订单明细数据的实时处理与分析。其核心功能是按 SKU（库存保有单位）ID 分组，统计一段时间内每个 SKU 的订单相关金额，并关联多个维度表以丰富数据信息，最终把处理结果写入 Doris 数据库
  */
 public class DwsTradeSkuOrderWindow {
     public static void main(String[] args) throws Exception {
@@ -244,129 +244,132 @@ public class DwsTradeSkuOrderWindow {
                 TimeUnit.SECONDS
         );
 
-        withSkuInfoDS.print();
+//        withSkuInfoDS.print();
         //TODO 10.关联spu维度
-//        SingleOutputStreamOperator<TradeSkuOrderBean> withSpuInfoDS = AsyncDataStream.unorderedWait(
-//                withSkuInfoDS,
-//                new DimAsyncFunction<TradeSkuOrderBean>() {
-//                    @Override
-//                    public void addDims(TradeSkuOrderBean orderBean, JSONObject dimJsonObj) {
-//                        orderBean.setSpuName(dimJsonObj.getString("spu_name"));
-//                    }
-//
-//                    @Override
-//                    public String getTableName() {
-//                        return "dim_spu_info";
-//                    }
-//
-//                    @Override
-//                    public String getRowKey(TradeSkuOrderBean orderBean) {
-//                        return orderBean.getSpuId();
-//                    }
-//                },
-//                60,
-//                TimeUnit.SECONDS
-//        );
-////        withSpuInfoDS.print();
-//        //TODO 11.关联tm维度
-//        SingleOutputStreamOperator<TradeSkuOrderBean> withTmDS = AsyncDataStream.unorderedWait(
-//                withSpuInfoDS,
-//                new DimAsyncFunction<TradeSkuOrderBean>() {
-//                    @Override
-//                    public void addDims(TradeSkuOrderBean orderBean, JSONObject dimJsonObj) {
-//                        orderBean.setTrademarkName(dimJsonObj.getString("tm_name"));
-//                    }
-//
-//                    @Override
-//                    public String getTableName() {
-//                        return "dim_base_trademark";
-//                    }
-//
-//                    @Override
-//                    public String getRowKey(TradeSkuOrderBean orderBean) {
-//                        return orderBean.getTrademarkId();
-//                    }
-//                },
-//                60,
-//                TimeUnit.SECONDS
-//        );
-//        //TODO 12.关联category3维度
-//        SingleOutputStreamOperator<TradeSkuOrderBean> c3Stream = AsyncDataStream.unorderedWait(
-//                withTmDS,
-//                new DimAsyncFunction<TradeSkuOrderBean>() {
-//                    @Override
-//                    public String getRowKey(TradeSkuOrderBean bean) {
-//                        return bean.getCategory3Id();
-//                    }
-//
-//                    @Override
-//                    public String getTableName() {
-//                        return "dim_base_category3";
-//                    }
-//
-//                    @Override
-//                    public void addDims(TradeSkuOrderBean bean, JSONObject dim) {
-//                        bean.setCategory3Name(dim.getString("name"));
-//                        bean.setCategory2Id(dim.getString("category2_id"));
-//                    }
-//                },
-//                120,
-//                TimeUnit.SECONDS
-//        );
-//
-//        //TODO 13.关联category2维度
-//        SingleOutputStreamOperator<TradeSkuOrderBean> c2Stream = AsyncDataStream.unorderedWait(
-//                c3Stream,
-//                new DimAsyncFunction<TradeSkuOrderBean>() {
-//                    @Override
-//                    public String getRowKey(TradeSkuOrderBean bean) {
-//                        return bean.getCategory2Id();
-//                    }
-//
-//                    @Override
-//                    public String getTableName() {
-//                        return "dim_base_category2";
-//                    }
-//
-//                    @Override
-//                    public void addDims(TradeSkuOrderBean bean, JSONObject dim) {
-//                        bean.setCategory2Name(dim.getString("name"));
-//                        bean.setCategory1Id(dim.getString("category1_id"));
-//                    }
-//                },
-//                120,
-//                TimeUnit.SECONDS
-//        );
-//
-//        //TODO 14.关联category1维度
-//        SingleOutputStreamOperator<TradeSkuOrderBean> withC1DS = AsyncDataStream.unorderedWait(
-//                c2Stream,
-//                new DimAsyncFunction<TradeSkuOrderBean>() {
-//                    @Override
-//                    public String getRowKey(TradeSkuOrderBean bean) {
-//                        return bean.getCategory1Id();
-//                    }
-//
-//                    @Override
-//                    public String getTableName() {
-//                        return "dim_base_category1";
-//                    }
-//
-//                    @Override
-//                    public void addDims(TradeSkuOrderBean bean, JSONObject dim) {
-//                        bean.setCategory1Name(dim.getString("name"));
-//                    }
-//                },
-//                120,
-//                TimeUnit.SECONDS
-//        );
-//
-//        withC1DS.print("======>");
+        SingleOutputStreamOperator<TradeSkuOrderBean> withSpuInfoDS = AsyncDataStream.unorderedWait(
+                withSkuInfoDS,
+                new DimAsyncFunction<TradeSkuOrderBean>() {
+                    @Override
+                    public void addDims(TradeSkuOrderBean orderBean, JSONObject dimJsonObj) {
+                        orderBean.setSpuName(dimJsonObj.getString("spu_name"));
+                    }
 
-//        //TODO 15.将关联的结果写到Doris表中
-//        withC1DS
-//                .map(new BeanToJsonStrMapFunction<>())
-//                .sinkTo(FlinkSinkUtil.getDorisSink("dws_trade_sku_order_window"));
+                    @Override
+                    public String getTableName() {
+                        return "dim_spu_info";
+                    }
+
+                    @Override
+                    public String getRowKey(TradeSkuOrderBean orderBean) {
+                        return orderBean.getSpuId();
+                    }
+                },
+                60,
+                TimeUnit.SECONDS
+        );
+//        withSpuInfoDS.print();
+        //TODO 11.关联tm维度
+        SingleOutputStreamOperator<TradeSkuOrderBean> withTmDS = AsyncDataStream.unorderedWait(
+                withSpuInfoDS,
+                new DimAsyncFunction<TradeSkuOrderBean>() {
+                    @Override
+                    public void addDims(TradeSkuOrderBean orderBean, JSONObject dimJsonObj) {
+                        orderBean.setTrademarkName(dimJsonObj.getString("tm_name"));
+                    }
+
+                    @Override
+                    public String getTableName() {
+                        return "dim_base_trademark";
+                    }
+
+                    @Override
+                    public String getRowKey(TradeSkuOrderBean orderBean) {
+                        return orderBean.getTrademarkId();
+                    }
+                },
+                60,
+                TimeUnit.SECONDS
+        );
+        //TODO 12.关联category3维度
+        SingleOutputStreamOperator<TradeSkuOrderBean> c3Stream = AsyncDataStream.unorderedWait(
+                withTmDS,
+                new DimAsyncFunction<TradeSkuOrderBean>() {
+                    @Override
+                    public String getRowKey(TradeSkuOrderBean bean) {
+                        return bean.getCategory3Id();
+                    }
+
+                    @Override
+                    public String getTableName() {
+                        return "dim_base_category3";
+                    }
+
+                    @Override
+                    public void addDims(TradeSkuOrderBean bean, JSONObject dim) {
+                        bean.setCategory3Name(dim.getString("name"));
+                        bean.setCategory2Id(dim.getString("category2_id"));
+                    }
+                },
+                120,
+                TimeUnit.SECONDS
+        );
+
+        //TODO 13.关联category2维度
+        SingleOutputStreamOperator<TradeSkuOrderBean> c2Stream = AsyncDataStream.unorderedWait(
+                c3Stream,
+                new DimAsyncFunction<TradeSkuOrderBean>() {
+                    @Override
+                    public String getRowKey(TradeSkuOrderBean bean) {
+                        return bean.getCategory2Id();
+                    }
+
+                    @Override
+                    public String getTableName() {
+                        return "dim_base_category2";
+                    }
+
+                    @Override
+                    public void addDims(TradeSkuOrderBean bean, JSONObject dim) {
+                        bean.setCategory2Name(dim.getString("name"));
+                        bean.setCategory1Id(dim.getString("category1_id"));
+                    }
+                },
+                120,
+                TimeUnit.SECONDS
+        );
+
+        //TODO 14.关联category1维度
+        SingleOutputStreamOperator<TradeSkuOrderBean> withC1DS = AsyncDataStream.unorderedWait(
+                c2Stream,
+                new DimAsyncFunction<TradeSkuOrderBean>() {
+                    @Override
+                    public String getRowKey(TradeSkuOrderBean bean) {
+                        return bean.getCategory1Id();
+                    }
+
+                    @Override
+                    public String getTableName() {
+                        return "dim_base_category1";
+                    }
+
+                    @Override
+                    public void addDims(TradeSkuOrderBean bean, JSONObject dim) {
+                        bean.setCategory1Name(dim.getString("name"));
+                    }
+                },
+                120,
+                TimeUnit.SECONDS
+        );
+
+        withC1DS.print("======>");
+
+        //TODO 15.将关联的结果写到Doris表中
+        final SingleOutputStreamOperator<String> operator = withC1DS
+                .map(new BeanToJsonStrMapFunction<>());
+
+        operator.print();
+
+//        operator.sinkTo(FlinkSinkUtil.getDorisSink("dws_trade_sku_order_window"));
 
         env.execute("DwsTradeSkuOrderWindow");
     }

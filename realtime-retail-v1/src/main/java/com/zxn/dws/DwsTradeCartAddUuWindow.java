@@ -34,7 +34,8 @@ import org.apache.flink.util.Collector;
  * @Package com.zxn.dws.DwsTradeCartAddUuWindow
  * @Author zhao.xinnuo
  * @Date 2025/5/5 14:54
- * @description: DwsTradeCartAddUuWindow
+ * @description:实现了一个实时统计不同时间窗口内去重加购用户数的功能，并将结果存储到 Doris 数据库中，
+ * 以便后续的数据分析和处理
  */
 public class DwsTradeCartAddUuWindow {
     public static void main(String[] args) throws Exception {

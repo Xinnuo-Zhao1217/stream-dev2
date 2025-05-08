@@ -40,10 +40,11 @@ import java.util.Collections;
 import java.util.HashSet;
 
 /**
- * @Package com.zxn.dws.DwsTradeProvinceOrderWindow
+ * @Package com.zxn.dws.DwsTradeProvinceOrderWindow - 地图
  * @Author zhao.xinnuo
  * @Date 2025/5/5 14:57
- * @description: DwsTradeProvinceOrderWindow
+ * @description: 从 Kafka 读取订单数据，按省份进行去重、聚合、窗口计算，并从 HBase 获取省份名称，最终将处理结果写入 Doris 数据库的功能
+ * 过滤完成之后的订单数据关联hbase存储的省份 流表join
  */
 public class DwsTradeProvinceOrderWindow {
     public static void main(String[] args) throws Exception {

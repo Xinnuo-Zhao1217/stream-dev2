@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import org.apache.paimon.shade.okhttp3.*;
-
+import com.zxn.constant.Constant;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -22,8 +22,8 @@ public class SiliconFlowApi {
     }
 
     private static final ConnectionPool CONNECTION_POOL = new ConnectionPool(200, 5, TimeUnit.MINUTES);
-    private static final String SILICON_API_ADDR = "https://api.siliconflow.cn/v1/chat/completions";
-    private static final String SILICON_API_TOKEN = ConfigUtils.getString("silicon.api.token");
+    //    private static final String SILICON_API_ADDR = "https://api.siliconflow.cn/v1/chat/completions";
+//    private static final String SILICON_API_TOKEN = Constant.TOPIC_API;
     private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
             .connectionPool(CONNECTION_POOL)
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -36,7 +36,7 @@ public class SiliconFlowApi {
             JSONObject requestBody = buildRequestBody(prompt);
             Thread.sleep(1);
             Request request = new Request.Builder()
-                    .url(SILICON_API_ADDR)
+                    .url(Constant.TOPIC_API_ADDR)
                     .post(RequestBody.create(
                             MediaType.parse("application/json; charset=utf-8"),
                             requestBody.toJSONString()
@@ -62,7 +62,7 @@ public class SiliconFlowApi {
 
     private static JSONObject buildRequestBody(String prompt) {
         return new JSONObject()
-                .fluentPut("model", "Pro/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B")
+                .fluentPut("model", "Qwen/Qwen2.5-7B-Instruct")
                 .fluentPut("stream", false)
                 .fluentPut("max_tokens", 512)
                 .fluentPut("temperature", 0.7)
@@ -111,10 +111,27 @@ public class SiliconFlowApi {
     }
 
     public static void main(String[] args) {
+        int maxRetries = 3;
+        int retryInterval = 5000; // 重试间隔为5秒
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                // 调用API的代码
+                // 如果API调用成功，跳出循环
+                break;
+            } catch (Exception e) {
+                if (i < maxRetries - 1) {
+                    try {
+                        Thread.sleep(retryInterval);
+                    } catch (InterruptedException ex) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        }
         // 测试用例（需要有效token）
         String result = generateBadReview(
                 "给出一个电商差评，攻击性拉满，使用脏话，20字数以内，不需要思考过程",
-                SILICON_API_TOKEN
+                Constant.TOPIC_API
         );
         System.out.println("生成结果: " + result);
     }

@@ -13,7 +13,7 @@ import java.time.Duration;
  * @Package com.zxn.dwd.DwdTradeOrderCancelDetail
  * @Author zhao.xinnuo
  * @Date 2025/5/4 20:45
- * @description: DwdTradeOrderCancelDetail
+ * @description: Flink 的流处理能力，从 Kafka 和 HBase 读取数据，筛选出订单取消相关的数据，经过处理后再将结果写回到 Kafka
  */
 public class DwdTradeOrderCancelDetail {
     public static void main(String[] args) throws Exception {

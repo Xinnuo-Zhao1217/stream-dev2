@@ -13,7 +13,7 @@ import java.time.Duration;
  * @Package com.zxn.dwd.DwdTradeRefundPaySucDetail
  * @Author zhao.xinnuo
  * @Date 2025/5/4 22:57
- * @description: DwdTradeRefundPaySucDetail
+ * @description: 处理电商交易中退款支付成功的详细数据
  */
 public class DwdTradeRefundPaySucDetail {
     public static void main(String[] args) throws Exception {

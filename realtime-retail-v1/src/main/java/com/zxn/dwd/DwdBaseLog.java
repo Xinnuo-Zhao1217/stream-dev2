@@ -28,7 +28,8 @@ import java.util.Map;
  * @Package com.zxn.dwd.DwdBaseLog
  * @Author zhao.xinnuo
  * @Date 2025/5/4 18:52
- * @description: DwdBaseLog
+ * @description: DwdBaseLog 日志
+ * 通过kafka把flume采集的日志数据 进行进一步的划分，并存入到新的kafka
  */
 public class DwdBaseLog {
 

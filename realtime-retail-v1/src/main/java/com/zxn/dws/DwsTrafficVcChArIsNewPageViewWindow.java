@@ -36,7 +36,8 @@ import org.apache.flink.util.Collector;
  * @Package com.zxn.dws.DwsTrafficVcChArIsNewPageViewWindow
  * @Author zhao.xinnuo
  * @Date 2025/5/5 15:08
- * @description: DwsTrafficVcChArIsNewPageViewWindow
+ * @description: 分组，统计页面浏览量（PV）、独立访客数（UV）、会话数（SV）以及页面停留总时长，
+ * 并将统计结果按 10 秒的滚动窗口进行聚合，最后将聚合结果以 JSON 字符串的形式写入 Doris 数据库
  */
 public class DwsTrafficVcChArIsNewPageViewWindow {
     public static void main(String[] args) throws Exception {
@@ -131,7 +132,7 @@ public class DwsTrafficVcChArIsNewPageViewWindow {
         );
 
         // 注释掉的打印语句，用于调试查看转换后的TrafficVcChArIsNewPageViewBean对象数据
-//        beanDS.print();
+        beanDS.print();
 
         // 为转换后的数据分配时间戳和水位线，使用单调递增的水位线策略
         // 从TrafficVcChArIsNewPageViewBean对象中提取时间戳字段作为事件时间戳

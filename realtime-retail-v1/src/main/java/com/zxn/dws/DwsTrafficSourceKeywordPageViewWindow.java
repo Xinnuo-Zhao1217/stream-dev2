@@ -11,7 +11,8 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
  * @Package com.zxn.dws.DwsTrafficSourceKeywordPageViewWindow
  * @Author zhao.xinnuo
  * @Date 2025/5/5 15:07
- * @description: DwsTrafficSourceKeywordPageViewWindow
+ * @description: 对来自 Kafka 的流量页面日志数据进行处理，提取搜索关键词并分词，
+ * 按 5 秒时间窗口统计各关键词的出现次数，最后把处理结果存入 Doris 数据库
  */
 public class DwsTrafficSourceKeywordPageViewWindow {
     public static void main(String[] args) throws Exception {

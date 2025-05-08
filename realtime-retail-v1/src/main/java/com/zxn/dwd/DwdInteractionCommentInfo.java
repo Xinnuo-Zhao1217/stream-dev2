@@ -11,7 +11,7 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
  * @Package com.zxn.dwd.DwdInteractionCommentInfo
  * @Author zhao.xinnuo
  * @Date 2025/5/4 20:43
- * @description: DwdInteractionCommentInfo
+ * @description: 实现了从 Kafka 读取数据，结合 HBase 中的字典数据进行处理，最终将处理结果写回 Kafka 的流处理过程。
  */
 public class DwdInteractionCommentInfo {
     public static void main(String[] args) throws Exception {
@@ -109,7 +109,6 @@ public class DwdInteractionCommentInfo {
 // 将joinedTable表中的数据插入到TOPIC_DWD_INTERACTION_COMMENT_INFO表中，即写入Kafka主题
         joinedTable.executeInsert(Constant.TOPIC_DWD_INTERACTION_COMMENT_INFO);
 
-// 执行Flink作业，作业名称为dwd_join
-        env.execute("dwd_join");
+
     }
 }

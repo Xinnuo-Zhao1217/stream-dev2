@@ -1,4 +1,4 @@
-package com.zxn.func;
+package com.zxn.util;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.flink.api.common.functions.RichFilterFunction;
@@ -13,12 +13,13 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 
 /**
- * @Package com.zxn.func.FilterBloomDeduplicatorFunc
- * @Author zhao.xinnuo
- * @Date 2025/5/7 11:00
- * @description: FilterBloomDeduplicatorFunc
+ * @Package com.retailersv1.func.FilterBloomDeduplicatorFunc
+ * @Author zhou.han
+ * @Date 2025/3/31 22:25
+ * @description: 布隆过滤器
  */
 public class FilterBloomDeduplicatorFunc extends RichFilterFunction<JSONObject> {
+
     private static final Logger logger = LoggerFactory.getLogger(FilterBloomDeduplicatorFunc.class);
 
     private final int expectedInsertions;
@@ -94,5 +95,4 @@ public class FilterBloomDeduplicatorFunc extends RichFilterFunction<JSONObject> 
     private int hash(String key) {
         return Hashing.murmur3_128().hashString(key, StandardCharsets.UTF_8).asInt();
     }
-
 }

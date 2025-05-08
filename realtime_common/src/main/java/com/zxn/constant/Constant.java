@@ -11,6 +11,10 @@ public class Constant {
 
     public static final String TOPIC_DB = "xinnuo_zhao_db1";
     public static final String TOPIC_GL = "realtime_v2_db";
+    public static final String TOPIC_FACT = "zxn_fact_comment_db";
+    public static final String TOPIC_RESULT_SENSTITVE = "xinyi_result_sensitive_words_user";
+    public static  final  String TOPIC_API="sk-kmbadawqevnnbqizjkhylwikdnoqyzzlygmuykntapwjuayz";
+    public static final  String TOPIC_API_ADDR="https://api.siliconflow.cn/v1/chat/completions";
     public static final String TOPIC_LOG = "yuxin_li_log";
 
     public static final String MYSQL_HOST = "10.160.60.17";

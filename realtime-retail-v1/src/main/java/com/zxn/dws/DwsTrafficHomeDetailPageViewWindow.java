@@ -34,7 +34,8 @@ import org.apache.flink.util.Collector;
  * @Package com.zxn.dws.DwsTrafficHomeDetailPageViewWindow
  * @Author zhao.xinnuo
  * @Date 2025/5/5 15:06
- * @description: DwsTrafficHomeDetailPageViewWindow
+ * @description: 是从 Kafka 数据源读取流量页面数据，筛选出首页和详情页的数据，统计首页和详情页的独立访客数（UV），
+ * 并将统计结果按 10 秒的滚动窗口进行聚合，最后将聚合结果以 JSON 字符串的形式写入 Doris 数据库
  */
 public class DwsTrafficHomeDetailPageViewWindow {
     public static void main(String[] args) throws Exception {
@@ -71,7 +72,7 @@ public class DwsTrafficHomeDetailPageViewWindow {
                 }
         );
         // 注释掉的打印语句，用于调试查看过滤后的数据
-        filterDS.print();
+//        filterDS.print();
 
         // TODO 3. 指定Watermark的生成策略以及提取事件时间字段
         SingleOutputStreamOperator<JSONObject> withWatermarkDS = filterDS.assignTimestampsAndWatermarks(
@@ -154,7 +155,7 @@ public class DwsTrafficHomeDetailPageViewWindow {
                 }
         );
         // 注释掉的打印语句，用于调试查看处理后的数据
-        beanDS.print();
+//        beanDS.print();
 
         // TODO 6. 对数据应用滚动事件时间窗口，窗口大小为10秒
         AllWindowedStream<TrafficHomeDetailPageViewBean, TimeWindow> windowDS = beanDS
