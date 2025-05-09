@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @Package com.retailersv1.func.AsyncHbaseDimBaseDicFunc
- * @Author xinyi.jiao
- * @Date 2025/3/15 20:47
+ * @Author xinnuo.zhao
+ * @Date 2025/5/7 20:47
  * @description: Async DimBaseDic
  */
 public class AsyncHbaseDimBaseDicFunc extends RichAsyncFunction<JSONObject,JSONObject> {

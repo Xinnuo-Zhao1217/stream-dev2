@@ -18,9 +18,7 @@ import java.util.concurrent.TimeUnit;
  * @description: EnvironmentSettingUtils
  */
 public class EnvironmentSettingUtils {
-    private static final String HDFS_CHECKPOINT_PATH = ConfigUtils.getString("flink.checkpoint.hdfs.dir");
-    // s3a://10.39.48.35:9000/flk-data
-    private static final String MINIO_CHECKPOINT_PATH = ConfigUtils.getString("flink.checkpoint.minio.dir");
+
 
     /**
      * 默认参数设置

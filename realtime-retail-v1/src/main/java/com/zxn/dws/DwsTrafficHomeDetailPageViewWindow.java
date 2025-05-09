@@ -39,21 +39,14 @@ import org.apache.flink.util.Collector;
  */
 public class DwsTrafficHomeDetailPageViewWindow {
     public static void main(String[] args) throws Exception {
-        // 获取Flink流执行环境，后续用于构建和执行流处理任务
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // 设置作业的并行度为1，即所有任务在一个并行实例上执行
         env.setParallelism(1);
 
-        // 启用检查点机制，每5000毫秒（5秒）进行一次检查点操作，采用精确一次（EXACTLY_ONCE）语义
-        // 确保在故障恢复时数据处理的一致性，无数据重复或丢失
         env.enableCheckpointing(5000L, CheckpointingMode.EXACTLY_ONCE);
 
-        // 从自定义工具类FlinkSourceUtil获取Kafka数据源，指定Kafka主题为"dwd_traffic_page"
-        // 消费者组ID为"dws_traffic_home_detail_page_view_window"
         KafkaSource<String> kafkaSource = FlinkSourceUtil.getKafkaSource("dwd_traffic_page_chenming", "dws_traffic_home_detail_page_view_window");
 
-        // 从Kafka数据源创建数据流，不使用水位线策略，命名为"Kafka_Source"
         DataStreamSource<String> kafkaStrDS = env.fromSource(kafkaSource, WatermarkStrategy.noWatermarks(), "Kafka_Source");
 
         // TODO 1. 对流中数据类型进行转换，将json字符串转换为JSONObject对象
@@ -64,14 +57,14 @@ public class DwsTrafficHomeDetailPageViewWindow {
                 new FilterFunction<JSONObject>() {
                     @Override
                     public boolean filter(JSONObject jsonObj) {
-                        // 从JSONObject的"page"字段中获取page_id
+
                         String pageId = jsonObj.getJSONObject("page").getString("page_id");
-                        // 判断page_id是否为"home"或"good_detail"，若是则返回true，保留该数据
+
                         return "home".equals(pageId) || "good_detail".equals(pageId);
                     }
                 }
         );
-        // 注释掉的打印语句，用于调试查看过滤后的数据
+
 //        filterDS.print();
 
         // TODO 3. 指定Watermark的生成策略以及提取事件时间字段
@@ -82,7 +75,7 @@ public class DwsTrafficHomeDetailPageViewWindow {
                                 new SerializableTimestampAssigner<JSONObject>() {
                                     @Override
                                     public long extractTimestamp(JSONObject jsonObj, long recordTimestamp) {
-                                        // 从JSONObject中提取"ts"字段作为事件时间戳
+
                                         return jsonObj.getLong("ts");
                                     }
                                 }
@@ -95,7 +88,7 @@ public class DwsTrafficHomeDetailPageViewWindow {
         // TODO 5. 使用flink的状态编程，判断是否为首页以及详情页的独立访客，并将结果封装为统计的实体类对象
         SingleOutputStreamOperator<TrafficHomeDetailPageViewBean> beanDS = keyedDS.process(
                 new KeyedProcessFunction<String, JSONObject, TrafficHomeDetailPageViewBean>() {
-                    // 定义状态变量，分别存储首页和详情页的上次访问日期
+
                     private ValueState<String> homeLastVisitDateState;
                     private ValueState<String> detailLastVisitDateState;
 
@@ -114,38 +107,34 @@ public class DwsTrafficHomeDetailPageViewWindow {
 
                     @Override
                     public void processElement(JSONObject jsonObj, KeyedProcessFunction<String, JSONObject, TrafficHomeDetailPageViewBean>.Context ctx, Collector<TrafficHomeDetailPageViewBean> out) throws Exception {
-                        // 从JSONObject的"page"字段中获取page_id
                         String pageId = jsonObj.getJSONObject("page").getString("page_id");
 
-                        // 从JSONObject中获取时间戳
                         Long ts = jsonObj.getLong("ts");
-                        // 将时间戳转换为日期字符串
+
                         String curVisitDate = DateFormatUtil.tsToDate(ts);
-                        // 初始化首页和详情页的独立访客计数
+
                         long homeUvCt = 0L;
                         long detailUvCt = 0L;
 
                         if ("home".equals(pageId)) {
-                            // 获取首页的上次访问日期
                             String homeLastVisitDate = homeLastVisitDateState.value();
-                            // 判断当前日期与上次访问日期是否不同或上次访问日期为空
+
                             if (StringUtils.isEmpty(homeLastVisitDate) || !homeLastVisitDate.equals(curVisitDate)) {
-                                // 若不同，则首页独立访客计数加1，并更新首页上次访问日期状态
+
                                 homeUvCt = 1L;
                                 homeLastVisitDateState.update(curVisitDate);
                             }
                         } else {
-                            // 获取详情页的上次访问日期
+
                             String detailLastVisitDate = detailLastVisitDateState.value();
-                            // 判断当前日期与上次访问日期是否不同或上次访问日期为空
+
                             if (StringUtils.isEmpty(detailLastVisitDate) || !detailLastVisitDate.equals(curVisitDate)) {
-                                // 若不同，则详情页独立访客计数加1，并更新详情页上次访问日期状态
+
                                 detailUvCt = 1L;
                                 detailLastVisitDateState.update(curVisitDate);
                             }
                         }
 
-                        // 如果首页或详情页的独立访客计数不为0，则将统计结果封装为TrafficHomeDetailPageViewBean对象并输出
                         if (homeUvCt != 0L || detailUvCt != 0L) {
                             out.collect(new TrafficHomeDetailPageViewBean(
                                     "", "", "", homeUvCt, detailUvCt, ts
@@ -154,7 +143,7 @@ public class DwsTrafficHomeDetailPageViewWindow {
                     }
                 }
         );
-        // 注释掉的打印语句，用于调试查看处理后的数据
+
 //        beanDS.print();
 
         // TODO 6. 对数据应用滚动事件时间窗口，窗口大小为10秒
@@ -163,7 +152,6 @@ public class DwsTrafficHomeDetailPageViewWindow {
 
         // TODO 7. 对窗口内的数据进行聚合操作
         SingleOutputStreamOperator<TrafficHomeDetailPageViewBean> reduceDS = windowDS.reduce(
-                // 定义ReduceFunction，用于聚合首页和详情页的独立访客计数
                 new ReduceFunction<TrafficHomeDetailPageViewBean>() {
                     @Override
                     public TrafficHomeDetailPageViewBean reduce(TrafficHomeDetailPageViewBean value1, TrafficHomeDetailPageViewBean value2) {
@@ -178,37 +166,35 @@ public class DwsTrafficHomeDetailPageViewWindow {
                 new ProcessAllWindowFunction<TrafficHomeDetailPageViewBean, TrafficHomeDetailPageViewBean, TimeWindow>() {
                     @Override
                     public void process(ProcessAllWindowFunction<TrafficHomeDetailPageViewBean, TrafficHomeDetailPageViewBean, TimeWindow>.Context context, Iterable<TrafficHomeDetailPageViewBean> elements, Collector<TrafficHomeDetailPageViewBean> out) {
-                        // 获取窗口内的第一个TrafficHomeDetailPageViewBean对象
+
                         TrafficHomeDetailPageViewBean viewBean = elements.iterator().next();
-                        // 获取窗口的时间范围
+
                         TimeWindow window = context.window();
-                        // 将窗口开始时间转换为日期时间字符串
+
                         String stt = DateFormatUtil.tsToDateTime(window.getStart());
-                        // 将窗口结束时间转换为日期时间字符串
+
                         String edt = DateFormatUtil.tsToDateTime(window.getEnd());
-                        // 将窗口开始时间转换为日期字符串
+
                         String curDate = DateFormatUtil.tsToDate(window.getStart());
-                        // 设置TrafficHomeDetailPageViewBean对象的相关时间字段
+
                         viewBean.setStt(stt);
                         viewBean.setEdt(edt);
                         viewBean.setCurDate(curDate);
-                        // 输出处理后的TrafficHomeDetailPageViewBean对象
+
                         out.collect(viewBean);
                     }
                 }
         );
 
-        // 将TrafficHomeDetailPageViewBean对象转换为JSON字符串
+
         SingleOutputStreamOperator<String> jsonMap = reduceDS
                 .map(new BeanToJsonStrMapFunction<>());
 
-        // 打印转换后的JSON字符串，用于调试
+
         jsonMap.print();
 
-        // 将转换后的JSON字符串写入Doris数据库，使用自定义工具类FlinkSinkUtil获取Doris数据源
         jsonMap.sinkTo(FlinkSinkUtil.getDorisSink("dws_traffic_home_detail_page_view_window"));
 
-        // 执行Flink作业，作业名称为"DwsTrafficHomeDetailPageViewWindow"
         env.execute("DwsTrafficHomeDetailPageViewWindow");
     }
 }

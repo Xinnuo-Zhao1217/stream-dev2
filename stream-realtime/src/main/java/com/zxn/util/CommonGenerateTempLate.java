@@ -7,8 +7,8 @@ import static com.zxn.util.SiliconFlowApi.generateBadReview;
 
 /**
  * @Package com.stream.utils.CommonGenerateTempLate
- * @Author xinyi.jiao
- * @Date 2025/3/16 19:43
+ * @Author xinnuo.zhao
+ * @Date 2025/5/7 19:43
  * @description: TempLate
  */
 public class CommonGenerateTempLate {

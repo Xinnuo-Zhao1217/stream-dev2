@@ -21,8 +21,8 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * @Package com.jiao.func.DbusBanBlackListUserInfo2Kafka
- * @Author xinyi.jiao
+ * @Package com.zxn.func.DbusBanBlackListUserInfo2Kafka
+ * @Author xinnuo.zhao
  * @Date 2025/5/8 10:46
  * @description: 名单封禁 Task 04
  */
@@ -84,7 +84,7 @@ public class DbusBanBlackListUserInfo2Kafka {
         // 将结果 存入 doris
 //        secondCheckMap
 //                .map(new BeanToJsonStrMapFunction<>())
-//                .sinkTo(FlinkSinkUtil.getDorisSink("xinyi_result_sensitive_words_user"));
+//                .sinkTo(FlinkSinkUtil.getDorisSink("xinnuo_result_sensitive_words_user"));
         env.execute();
     }
 }
