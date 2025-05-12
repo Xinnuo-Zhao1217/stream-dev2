@@ -9,7 +9,7 @@ package com.zxn.constant;
 public class Constant {
     public static final String KAFKA_BROKERS = "cdh01:9092,cdh02:9092,cdh03:9092";
 
-    public static final String TOPIC_DB = "xinnuo_zhao_db1";
+    public static final String TOPIC_DB = "xinnuo_zhao_gd1";
     public static final String TOPIC_GL = "realtime_v2_db";
     public static final String TOPIC_FACT = "zxn_fact_comment_db";
     public static final String TOPIC_RESULT_SENSTITVE = "xinyi_result_sensitive_words_user";
@@ -21,7 +21,7 @@ public class Constant {
     public static final int MYSQL_PORT = 3306;
     public static final String MYSQL_USER_NAME = "root";
     public static final String MYSQL_PASSWORD = "Zh1028,./";
-    public static final String HBASE_NAMESPACE = "ns_xinyi_jiao";
+    public static final String HBASE_NAMESPACE = "ns_zxn";
 
     public static final String MYSQL_DRIVER = "com.mysql.cj.jdbc.Driver";
     public static final String MYSQL_URL = "jdbc:mysql://10.160.60.17:3306?useSSL=false";
