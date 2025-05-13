@@ -18,6 +18,8 @@ import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
 import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -27,140 +29,145 @@ import java.time.format.DateTimeFormatter;
  * @description:
  */
 public class label2kafka {
-        public static SingleOutputStreamOperator<JSONObject> removeSourceFields(SingleOutputStreamOperator<JSONObject> userInfoOutputDS1) {
-            return userInfoOutputDS1.map(new MapFunction<JSONObject, JSONObject>() {
-                @Override
-                public JSONObject map(JSONObject jsonObject) throws Exception {
-                    JSONObject after = jsonObject.getJSONObject("after");
-                    after.put("op",jsonObject.getString("op"));
-                    after.put("ts",jsonObject.getString("ts_ms"));
-                    return after;
-                }
-            });
-        }
-        public static SingleOutputStreamOperator<JSONObject> assignTimestampsAndWatermarks(SideOutputDataStream<JSONObject> userInfoOutputDS) {
-            return userInfoOutputDS.assignTimestampsAndWatermarks(
-                    WatermarkStrategy
-                            .<JSONObject>forMonotonousTimestamps()
-                            .withTimestampAssigner(new SerializableTimestampAssigner<JSONObject>() {
-                                @Override
-                                public long extractTimestamp(JSONObject jsonObject, long l) {
-                                    return jsonObject.getLong("ts_ms");
-                                }
-                            })
-            );
-        }
-        @SneakyThrows
-        public static void main(String[] args) {
-            StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-            env.setParallelism(4);
 
-            DataStreamSource<String> kafkaSource = KafkaUtil.getKafkaSource(env, "xinnuo_zhao_gd1", "label2kafka");
+    @SneakyThrows
+    public static void main(String[] args) {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(4);
 
-            // 过滤出订单信息
-            final OutputTag<JSONObject> orderInfoJsonDS = new OutputTag<JSONObject>("order_info"){};
-            // 过滤出购物车信息
-            final OutputTag<JSONObject> cartInfoJsonDS = new OutputTag<JSONObject>("cart_info"){};
-            // 过滤出订单详情信息
-            final OutputTag<JSONObject> orderDetailJsonDS = new OutputTag<JSONObject>("order_detail"){};
-            // 过滤出评论信息
-            final OutputTag<JSONObject> commentInfoJsonDS = new OutputTag<JSONObject>("comment_info"){};
-            // 过滤出收藏信息
-            final OutputTag<JSONObject> favorInfoJsonDS = new OutputTag<JSONObject>("favor_info"){};
-            final OutputTag<JSONObject> userInfoSupMsgJsonDS = new OutputTag<JSONObject>("user_info_sup_msg"){};
-            final OutputTag<JSONObject> userInfoJsonDS = new OutputTag<JSONObject>("user_info"){};
+        DataStreamSource<String> kafkaSource = KafkaUtil.getKafkaSource(env, "xinyi_jiao_yw", "label2kafka");
 
-            SingleOutputStreamOperator<Object> dbJsonDS = kafkaSource.map(JSON::parseObject).process(new ProcessFunction<JSONObject, Object>() {
-                @Override
-                public void processElement(JSONObject jsonObject, ProcessFunction<JSONObject, Object>.Context context, Collector<Object> collector) throws Exception {
-                    String table = jsonObject.getJSONObject("source").getString("table");
-                    if (table.equals("order_info")) {
-                        context.output(orderInfoJsonDS, jsonObject);
-                    } else if (table.equals("order_detail")) {
-                        context.output(orderDetailJsonDS, jsonObject);
-                    } else if (table.equals("cart_info")) {
-                        context.output(cartInfoJsonDS, jsonObject);
-                    } else if (table.equals("comment_info")) {
-                        context.output(commentInfoJsonDS, jsonObject);
-                    } else if (table.equals("favor_info")) {
-                        context.output(favorInfoJsonDS, jsonObject);
-                    }else if (table.equals("user_info_sup_msg")) {
-                        context.output(userInfoSupMsgJsonDS, jsonObject);
-                    }else if (table.equals("user_info")) {
-                        context.output(userInfoJsonDS, jsonObject);
+        SingleOutputStreamOperator<JSONObject> kafkaJson = kafkaSource
+                .map(JSON::parseObject)
+                .filter(data -> !data.isEmpty())
+                .assignTimestampsAndWatermarks(WatermarkStrategy.<JSONObject>forMonotonousTimestamps().withTimestampAssigner(new SerializableTimestampAssigner<JSONObject>() {
+                    @Override
+                    public long extractTimestamp(JSONObject jsonObject, long l) {
+                        return jsonObject.getLong("ts_ms");
                     }
-                    collector.collect(jsonObject);
-                }
-            });
-            // 获取测流数据
-            SideOutputDataStream<JSONObject> orderInfoOutputDS = dbJsonDS.getSideOutput(orderInfoJsonDS);
-            SideOutputDataStream<JSONObject> cartInfoOutputDS = dbJsonDS.getSideOutput(cartInfoJsonDS);
-            SideOutputDataStream<JSONObject> orderDetailOutputDS = dbJsonDS.getSideOutput(orderDetailJsonDS);
-            SideOutputDataStream<JSONObject> commentInfoOutputDS = dbJsonDS.getSideOutput(commentInfoJsonDS);
-            SideOutputDataStream<JSONObject> favorInfoOutputDS = dbJsonDS.getSideOutput(favorInfoJsonDS);
-            SideOutputDataStream<JSONObject> userInfoSupMsgOutputDS = dbJsonDS.getSideOutput(userInfoSupMsgJsonDS);
-            SideOutputDataStream<JSONObject> userInfoOutputDS = dbJsonDS.getSideOutput(userInfoJsonDS);
+                }));
 
-//水位线
-            SingleOutputStreamOperator<JSONObject> orderInfoOutputDS1 = assignTimestampsAndWatermarks(orderInfoOutputDS);
-            SingleOutputStreamOperator<JSONObject> cartInfoOutputDS1 = assignTimestampsAndWatermarks(cartInfoOutputDS);
-            SingleOutputStreamOperator<JSONObject> orderDetailOutputDS1 = assignTimestampsAndWatermarks(orderDetailOutputDS);
-            SingleOutputStreamOperator<JSONObject> commentInfoOutputDS1 = assignTimestampsAndWatermarks(commentInfoOutputDS);
-            SingleOutputStreamOperator<JSONObject> favorInfoOutputDS1 = assignTimestampsAndWatermarks(favorInfoOutputDS);
-            SingleOutputStreamOperator<JSONObject> userInfoSupMsgOutputDS1 = assignTimestampsAndWatermarks(userInfoSupMsgOutputDS);
-            SingleOutputStreamOperator<JSONObject> userInfoOutputDS1 = assignTimestampsAndWatermarks(userInfoOutputDS);
 
-            // 对字段进行优化（过滤）
-            SingleOutputStreamOperator<JSONObject> userInfoOutputDS2 = removeSourceFields(userInfoOutputDS1);
-            SingleOutputStreamOperator<JSONObject> userInfoSupMsgOutputDS2 = removeSourceFields(userInfoSupMsgOutputDS1);
-            SingleOutputStreamOperator<JSONObject> favorInfoOutputDS2 = removeSourceFields(favorInfoOutputDS1);
-            SingleOutputStreamOperator<JSONObject> commentInfoOutputDS2 = removeSourceFields(commentInfoOutputDS1);
-            SingleOutputStreamOperator<JSONObject> orderDetailOutputDS12 = removeSourceFields(orderDetailOutputDS1);
-            SingleOutputStreamOperator<JSONObject> cartInfoOutputDS2 = removeSourceFields(cartInfoOutputDS1);
-            SingleOutputStreamOperator<JSONObject> orderInfoOutputDS2 = removeSourceFields(orderInfoOutputDS1);
+        // 获取用户数据
+        SingleOutputStreamOperator<JSONObject> dbJsonDS1 = kafkaJson
+                .filter(json->json.getJSONObject("source").getString("table").equals("user_info"))
+                .map(new MapFunction<JSONObject, JSONObject>() {
+                    @Override
+                    public JSONObject map(JSONObject jsonObject) throws Exception {
 
-            // 异步io
-            SingleOutputStreamOperator<JSONObject> userInfo = userInfoOutputDS2
-                    .keyBy(o->o.getString("id"))
-                    .intervalJoin(userInfoSupMsgOutputDS2.keyBy(o->o.getString("uid")))
-                    .between(Time.minutes(-30), Time.minutes(30))
-                    .process(new ProcessJoinFunction<JSONObject, JSONObject, JSONObject>() {
-                        @Override
-                        public void processElement(JSONObject jsonObject1, JSONObject jsonObject2, ProcessJoinFunction<JSONObject, JSONObject, JSONObject>.Context context, Collector<JSONObject> collector) throws Exception {
-                            // 对数据进行转换，如用户的生日进行转换
-                            if (jsonObject1 != null && jsonObject1.containsKey("birthday")) {
-                                Integer epochDay = jsonObject1.getInteger("birthday");
-                                if (epochDay != null) {
-                                    LocalDate date = LocalDate.ofEpochDay(epochDay);
-                                    jsonObject1.put("birthday", date.format(DateTimeFormatter.ISO_DATE));
+                        JSONObject result = new JSONObject();
+                        if (jsonObject.containsKey("after") && jsonObject.getJSONObject("after") != null) {
+                            JSONObject after = jsonObject.getJSONObject("after");
+                            result.put("id", after.getString("id"));
+                            result.put("uname", after.getString("name"));
+                            result.put("user_level", after.getString("user_level"));
+                            result.put("login_name", after.getString("login_name"));
+                            result.put("phone_num", after.getString("phone_num"));
+                            result.put("email", after.getString("email"));
+                            result.put("gender", after.getString("gender") != null ? after.getString("gender") : "home");
+                            result.put("birthday", after.getString("birthday"));
+                            result.put("ts_ms", jsonObject.getLongValue("ts_ms"));
+                            Integer birthdayStr = after.getInteger("birthday");
+                            if (birthdayStr != null) {
+                                try {
+                                    LocalDate date = LocalDate.ofEpochDay(birthdayStr);
+                                    //获取生日
+                                    result.put("birthday", date.format(DateTimeFormatter.ISO_DATE));
+                                    String birthdayStr1 = result.getString("birthday");
+                                    String substring = birthdayStr1.substring(0,3);
+                                    // 获取年代
+                                    result.put("decade", substring + "0");
 
+                                    // 获取年龄;
+                                    LocalDate birthday = LocalDate.parse(birthdayStr1, DateTimeFormatter.ISO_DATE);
+                                    LocalDate currentDate = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+
+
+                                    int age = calculateAge(birthday, currentDate);
+                                    result.put("age", age);
+                                    String zodiac = getZodiacSign(birthday);
+                                    result.put("zodiac_sign", zodiac);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
                                 }
                             }
-                            if (jsonObject1 != null) {
-                                jsonObject1.put("user_info_sup_msg", jsonObject2);
-                                String string = jsonObject1.getString("birthday");
-                                String substring = string.substring(0,3);
-                                String substring1 = string.substring(0,4);
-
-                                System.out.println(substring1);
-                                // 获取年份
-                                jsonObject1.put("nianDai", substring + "0");
-
-                                // 获取年龄
-                                jsonObject1.put("age", substring1);
-                                jsonObject1.put("age",LocalDate.now().getYear()-jsonObject1.getInteger("age"));
-
-                                // 获取性别
-                                if(jsonObject1.getString("gender")==null){
-                                    jsonObject1.put("gender","H");
-                                }
-                            }
-                            collector.collect(jsonObject1);
-
                         }
-                    });
-            userInfo.print();
 
-            env.execute();
-        }
+                        return result;
+                    }
+                });
+
+        //通过布隆过滤器，去掉重复数据 修改 增加参数
+//        SingleOutputStreamOperator<JSONObject> dbJsonDS = dbJsonDS1.keyBy(data -> data.getLong("id"))
+//                .filter(new FilterBloomDeduplicatorFunc(1000000, 0.01));
+
+
+        // 获取用户详情数据
+        SingleOutputStreamOperator<JSONObject> dbJsonDS2 = kafkaJson
+                .filter(json->json.getJSONObject("source").getString("table").equals("user_info_sup_msg"))
+                .map(new MapFunction<JSONObject, JSONObject>() {
+                    @Override
+                    public JSONObject map(JSONObject jsonObject) throws Exception {
+                        JSONObject result = new JSONObject();
+                        if (jsonObject.containsKey("after") && jsonObject.getJSONObject("after") != null) {
+                            JSONObject after = jsonObject.getJSONObject("after");
+                            result.put("uid", after.getString("uid"));
+                            result.put("unit_height", after.getString("unit_height"));
+                            result.put("create_ts", after.getLong("create_ts"));
+                            result.put("weight", after.getString("weight"));
+                            result.put("unit_weight", after.getString("unit_weight"));
+                            result.put("height", after.getString("height"));
+                            result.put("ts_ms", jsonObject.getLong("ts_ms"));
+                            return result;
+                        }
+                        return null;
+                    }
+                });
+
+
+        // intervalJoin
+        SingleOutputStreamOperator<JSONObject> userInfo = dbJsonDS1
+                .keyBy(o->o.getString("id"))
+                .intervalJoin(dbJsonDS2.keyBy(o->o.getString("uid")))
+                .between(Time.minutes(-30), Time.minutes(30))
+                .process(new ProcessJoinFunction<JSONObject, JSONObject, JSONObject>() {
+                    @Override
+                    public void processElement(JSONObject jsonObject1, JSONObject jsonObject2, ProcessJoinFunction<JSONObject, JSONObject, JSONObject>.Context context, Collector<JSONObject> collector) throws Exception {
+                        JSONObject result = new JSONObject();
+                        if (jsonObject1.getString("id").equals(jsonObject2.getString("uid"))){
+                            result.putAll(jsonObject1);
+                            result.put("height",jsonObject2.getString("height"));
+                            result.put("unit_height",jsonObject2.getString("unit_height"));
+                            result.put("weight",jsonObject2.getString("weight"));
+                            result.put("unit_weight",jsonObject2.getString("unit_weight"));
+                        }
+                        collector.collect(result);
+
+                    }
+                });
+        userInfo.print();
+
+        env.execute();
+    }
+    private static int calculateAge(LocalDate birthDate, LocalDate currentDate) {
+        return Period.between(birthDate, currentDate).getYears();
+    }
+    private static String getZodiacSign(LocalDate birthDate) {
+        int month = birthDate.getMonthValue();
+        int day = birthDate.getDayOfMonth();
+
+        // 星座日期范围定义
+        if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return "摩羯座";
+        else if (month == 1 || month == 2 && day <= 18) return "水瓶座";
+        else if (month == 2 || month == 3 && day <= 20) return "双鱼座";
+        else if (month == 3 || month == 4 && day <= 19) return "白羊座";
+        else if (month == 4 || month == 5 && day <= 20) return "金牛座";
+        else if (month == 5 || month == 6 && day <= 21) return "双子座";
+        else if (month == 6 || month == 7 && day <= 22) return "巨蟹座";
+        else if (month == 7 || month == 8 && day <= 22) return "狮子座";
+        else if (month == 8 || month == 9 && day <= 22) return "处女座";
+        else if (month == 9 || month == 10 && day <= 23) return "天秤座";
+        else if (month == 10 || month == 11 && day <= 22) return "天蝎座";
+        else return "射手座";
+    }
 }
