@@ -1,6 +1,7 @@
 package com.zxn.func;
 
 import com.alibaba.fastjson.JSONObject;
+import com.zxn.constant.Constant;
 import com.zxn.dim.DimBaseCategory;
 import com.zxn.dim.DimCategoryCompare;
 import com.zxn.util.ConfigUtils;
@@ -42,9 +43,9 @@ public class MapDeviceAndSearchMarkModelFunc extends RichMapFunction<JSONObject,
     @Override
     public void open(Configuration parameters) throws Exception {
         connection = JdbcUtils.getMySQLConnection(
-                ConfigUtils.getString("mysql.url"),
-                ConfigUtils.getString("mysql.user"),
-                ConfigUtils.getString("mysql.pwd"));
+                Constant.MYSQL_URL,
+                Constant.MYSQL_USER_NAME,
+                Constant.MYSQL_PASSWORD);
         String sql = "select id, category_name, search_category from realtime_v1.category_compare_dic;";
         dimCategoryCompares = JdbcUtils.queryList2(connection, sql, DimCategoryCompare.class, true);
         super.open(parameters);
