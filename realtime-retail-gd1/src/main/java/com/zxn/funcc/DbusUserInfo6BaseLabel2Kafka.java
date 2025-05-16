@@ -49,10 +49,10 @@ public class DbusUserInfo6BaseLabel2Kafka {
     private static final String kafka_page_log_topic = "realtime_v2_page_log";
 
     // 类目维度数据：存储三级类目关联信息（如"手机→智能手机→安卓手机"）
-    // 用于商品分类、用户偏好分析
+
     private static final List<DimBaseCategory> dim_base_categories;
     // 数据库连接：用于读取维度表数据和写入结果
-    // 在静态代码块中初始化，确保全局唯一
+
     private static final Connection connection;
     private static final double device_rate_weight_coefficient = 0.1; // 设备权重系数
     private static final double search_rate_weight_coefficient = 0.15; // 搜索权重系数
@@ -97,7 +97,7 @@ public class DbusUserInfo6BaseLabel2Kafka {
     public static void main(String[] args) {
         // 1. 创建Flink执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        // 设置并行度为4（根据集群资源调整）
+        // 设置并行度为4
         env.setParallelism(4);
 
         // 2. 从Kafka消费CDC变更数据（用户信息、订单等）
@@ -111,23 +111,21 @@ public class DbusUserInfo6BaseLabel2Kafka {
                 ),
                 // 设置水位线策略（处理乱序数据）
                 WatermarkStrategy.<String>forBoundedOutOfOrderness(Duration.ofSeconds(3))
-                        // 从消息中提取时间戳字段（用于事件时间处理）
                         .withTimestampAssigner((event, timestamp) -> {
                             try {
                                 JSONObject jsonObject = JSONObject.parseObject(event);
-                                // 检查消息是否包含时间戳字段（ts_ms）
                                 if (jsonObject != null && jsonObject.containsKey("ts_ms")) {
                                     return jsonObject.getLong("ts_ms");  // 使用消息自带时间戳
                                 }
                             } catch (Exception e) {
-                                // 解析失败时打印错误日志并返回默认值
+
                                 e.printStackTrace();
                                 System.err.println("解析Kafka消息时间戳失败: " + event);
                             }
-                            return 0L;  // 默认时间戳（慎用，可能导致数据丢失）
+                            return 0L;
                         }),
-                "kafka_cdc_db_source"  // 数据源名称（用于监控和调试）
-        ).uid("kafka_cdc_db_source").name("Kafka CDC数据源");  // 设置唯一ID和显示名称
+                "kafka_cdc_db_source"
+        ).uid("kafka_cdc_db_source").name("Kafka CDC数据源");
 
         // 从Kafka消费页面日志数据（用户行为记录）
         SingleOutputStreamOperator<String> kafkaPageLogSource = env.fromSource(
@@ -166,8 +164,7 @@ public class DbusUserInfo6BaseLabel2Kafka {
                 .uid("convert_json_page_log").name("页面日志JSON解析");
 
         // 从页面日志中提取设备信息和搜索关键词
-        // MapDeviceInfoAndSearchKetWordMsgFunc：自定义函数，提取字段并转换格式
-        // 输出字段可能包含：uid（用户ID）、device_type（设备类型）、search_keyword（搜索词）等
+
         SingleOutputStreamOperator<JSONObject> logDeviceInfoDs = dataPageLogConvertJsonDs.map(new MapDeviceInfoAndSearchKetWordMsgFunc())
                 .uid("extract_device_search").name("提取设备信息和搜索词");
 
@@ -183,10 +180,7 @@ public class DbusUserInfo6BaseLabel2Kafka {
         // 目的：避免重复计算，确保数据准确性
         SingleOutputStreamOperator<JSONObject> processStagePageLogDs = keyedStreamLogPageMsg.process(new ProcessFilterRepeatTsDataFunc());
         // 2分钟滚动窗口：按用户ID聚合页面行为数据
-        // 1. 再次按用户ID分组（确保数据按用户隔离）
-        // 2. 使用AggregateUserDataProcessFunction预处理数据（可能提取特征或计算中间指标）
-        // 3. 应用2分钟滚动窗口（基于处理时间，非事件时间）
-        // 4. 使用reduce操作保留窗口内最后一条数据（丢弃历史数据，仅保留最新状态）
+
         SingleOutputStreamOperator<JSONObject> win2MinutesPageLogsDs = processStagePageLogDs.keyBy(data -> data.getString("uid"))
                 .process(new AggregateUserDataProcessFunction())
                 .keyBy(data -> data.getString("uid"))
@@ -195,7 +189,6 @@ public class DbusUserInfo6BaseLabel2Kafka {
                 .uid("2min_window_aggregation").name("用户行为2分钟窗口聚合");
 
         // 设备与搜索词打分模型：基于窗口聚合结果计算用户偏好
-        // MapDeviceAndSearchMarkModelFunc：自定义函数，输入设备信息和搜索关键词，输出打分结果
         SingleOutputStreamOperator<JSONObject> mapDeviceAndSearchRateResultDs = win2MinutesPageLogsDs.map(
                 new MapDeviceAndSearchMarkModelFunc(dim_base_categories, device_rate_weight_coefficient, search_rate_weight_coefficient)
         );
@@ -215,11 +208,11 @@ public class DbusUserInfo6BaseLabel2Kafka {
         ).uid("filter_order_detail").name("过滤订单明细表");
 
         // 订单主表数据格式转换（提取关键字段）
-        // MapOrderInfoDataFunc：自定义函数，转换订单主表字段（如提取订单ID、用户ID、订单金额等）
+
         SingleOutputStreamOperator<JSONObject> mapCdcOrderInfoDs = cdcOrderInfoDs.map(new MapOrderInfoDataFunc());
 
         // 订单明细表数据格式转换（提取关键字段）
-        // MapOrderDetailFunc：自定义函数，转换订单明细表字段（如提取商品ID、类目ID、价格等）
+
         SingleOutputStreamOperator<JSONObject> mapCdcOrderDetailDs = cdcOrderDetailDs.map(new MapOrderDetailFunc());
 
         // 过滤空ID的订单数据（确保数据完整性）
@@ -235,38 +228,25 @@ public class DbusUserInfo6BaseLabel2Kafka {
         KeyedStream<JSONObject, String> keyedStreamCdcOrderDetailDs = filterNotNullCdcOrderDetailDs.keyBy(data -> data.getString("order_id"));
 
         // 订单主表与明细表时间窗口关联（±2分钟容错）
-        // IntervalJoin：处理流数据的时间关联（处理CDC数据的延迟问题）
-        // ProcessFunction：自定义关联逻辑（如合并字段、计算汇总指标）
+
         SingleOutputStreamOperator<JSONObject> processIntervalJoinOrderInfoAndDetailDs = keyedStreamCdcOrderInfoDs.intervalJoin(keyedStreamCdcOrderDetailDs)
                 .between(Time.minutes(-2), Time.minutes(2))  // 时间窗口范围（主表事件前后2分钟内的明细表数据）
                 .process(new IntervalDbOrderInfoJoinOrderDetailProcessFunc());
 
         // 订单数据去重：基于明细ID去重（处理CDC的UPDATE/DELETE事件可能导致的重复数据）
-        // processOrderInfoAndDetailFunc：自定义去重逻辑（可能基于版本号或时间戳）
+
         SingleOutputStreamOperator<JSONObject> processDuplicateOrderInfoAndDetailDs = processIntervalJoinOrderInfoAndDetailDs.keyBy(data -> data.getString("detail_id"))
                 .process(new processOrderInfoAndDetailFunc());
 
 
         // 品类、品牌、年龄、时间打分模型（Base4）
-// 输入：去重后的订单主表和明细表合并数据
-// 输出：包含品类、品牌、年龄、时间相关特征的用户画像数据
-// 计算逻辑：
-// - 品类权重：category_rate_weight_coefficient = 0.3
-// - 品牌权重：brand_rate_weight_coefficient = 0.2
-// - 年龄权重：time_rate_weight_coefficient = 0.1
-// - 时间权重：amount_rate_weight_coefficient = 0.15
-// 综合考虑用户的购买行为和基本信息，生成更全面的用户画像
+
         SingleOutputStreamOperator<JSONObject> mapOrderInfoAndDetailModelDs = processDuplicateOrderInfoAndDetailDs.map(
                 new MapOrderAndDetailRateModelFunc(dim_base_categories, time_rate_weight_coefficient, amount_rate_weight_coefficient, brand_rate_weight_coefficient, category_rate_weight_coefficient)
         );
 
 // 处理用户生日格式（从天数转换为日期字符串）
-// 输入：包含用户信息的数据流
-// 输出：生日字段格式转换后的用户信息数据流
-// 转换逻辑：
-// - 从after字段中提取生日天数（epochDay）
-// - 使用LocalDate.ofEpochDay将天数转换为LocalDate对象
-// - 再格式化为"yyyy-MM-dd"字符串
+
         SingleOutputStreamOperator<JSONObject> finalUserInfoDs = userInfoDs.map(new RichMapFunction<JSONObject, JSONObject>() {
             @Override
             public JSONObject map(JSONObject jsonObject) {
@@ -283,47 +263,55 @@ public class DbusUserInfo6BaseLabel2Kafka {
         });
 
 // 过滤用户扩展信息表数据（从CDC变更流中筛选）
-// 输入：包含所有表变更的数据流
-// 输出：仅包含user_info_sup_msg表变更的数据流
+
         SingleOutputStreamOperator<JSONObject> userInfoSupDs = dataConvertJsonDs.filter(data -> data.getJSONObject("source").getString("table").equals("user_info_sup_msg"))
                 .uid("filter_user_info_sup").name("过滤用户扩展信息表");
 
 // 转换用户基本信息格式
-// 输入：生日格式转换后的用户信息数据流
-// 输出：包含更多用户特征的规范化数据流
-// 转换逻辑：
-// - 提取基本信息字段：uid, uname, user_level, login_name, phone_num, email, gender, birthday, ts_ms
-// - 计算年龄、年代、星座等衍生特征
-// - 年龄计算：calculateAge(birthday, currentDate)
-// - 年代计算：birthday.getYear() / 10 * 10
-// - 星座计算：getZodiacSign(birthday)
+
         SingleOutputStreamOperator<JSONObject> mapUserInfoDs = finalUserInfoDs.map(new RichMapFunction<JSONObject, JSONObject>() {
                     @Override
                     public JSONObject map(JSONObject jsonObject) {
                         JSONObject result = new JSONObject();
                         if (jsonObject.containsKey("after") && jsonObject.getJSONObject("after") != null) {
                             JSONObject after = jsonObject.getJSONObject("after");
+                            // 提取用户ID
                             result.put("uid", after.getString("id"));
+                            // 提取用户名
                             result.put("uname", after.getString("name"));
+                            // 提取用户等级
                             result.put("user_level", after.getString("user_level"));
+                            // 提取登录名
                             result.put("login_name", after.getString("login_name"));
+                            // 提取电话号码
                             result.put("phone_num", after.getString("phone_num"));
+                            // 提取电子邮件
                             result.put("email", after.getString("email"));
+                            // 提取性别，如果性别为空则设置为"home"
                             result.put("gender", after.getString("gender") != null? after.getString("gender") : "home");
+                            // 提取生日
                             result.put("birthday", after.getString("birthday"));
+                            // 提取时间戳
                             result.put("ts_ms", jsonObject.getLongValue("ts_ms"));
+
                             String birthdayStr = after.getString("birthday");
                             if (birthdayStr != null && !birthdayStr.isEmpty()) {
                                 try {
+                                    // 将生日字符串解析为LocalDate对象
                                     LocalDate birthday = LocalDate.parse(birthdayStr, DateTimeFormatter.ISO_DATE);
+                                    // 获取当前日期
                                     LocalDate currentDate = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+                                    // 计算年龄
                                     int age = calculateAge(birthday, currentDate);
+                                    // 计算年代
                                     int decade = birthday.getYear() / 10 * 10;
                                     result.put("decade", decade);
                                     result.put("age", age);
+                                    // 计算星座
                                     String zodiac = getZodiacSign(birthday);
                                     result.put("zodiac_sign", zodiac);
                                 } catch (Exception e) {
+                                    // 如果发生异常，打印堆栈跟踪信息
                                     e.printStackTrace();
                                 }
                             }
@@ -333,33 +321,49 @@ public class DbusUserInfo6BaseLabel2Kafka {
                 })
                 .uid("map_user_info").name("转换用户基本信息");
 
+// 转换用户扩展信息格式
+
         SingleOutputStreamOperator<JSONObject> mapUserInfoSupDs = userInfoSupDs.map(new RichMapFunction<JSONObject, JSONObject>() {
                     @Override
                     public JSONObject map(JSONObject jsonObject) {
                         JSONObject result = new JSONObject();
                         if (jsonObject.containsKey("after") && jsonObject.getJSONObject("after") != null) {
                             JSONObject after = jsonObject.getJSONObject("after");
+                            // 提取用户ID
                             result.put("uid", after.getString("uid"));
+                            // 提取身高单位
                             result.put("unit_height", after.getString("unit_height"));
+                            // 提取创建时间戳
                             result.put("create_ts", after.getLong("create_ts"));
+                            // 提取体重
                             result.put("weight", after.getString("weight"));
+                            // 提取体重单位
                             result.put("unit_weight", after.getString("unit_weight"));
+                            // 提取身高
                             result.put("height", after.getString("height"));
+                            // 提取时间戳
                             result.put("ts_ms", jsonObject.getLong("ts_ms"));
                         }
                         return result;
                     }
                 })
-                .uid("sup userinfo sup")
-                .name("sup userinfo sup");
+                .uid("sup_userinfo_sup").name("sup userinfo sup");
 
+// 过滤掉uid为空的用户基本信息数据
 
-        SingleOutputStreamOperator<JSONObject> finalUserinfoDs = mapUserInfoDs.filter(data -> data.containsKey("uid") && !data.getString("uid").isEmpty());
-        SingleOutputStreamOperator<JSONObject> finalUserinfoSupDs = mapUserInfoSupDs.filter(data -> data.containsKey("uid") && !data.getString("uid").isEmpty());
+        SingleOutputStreamOperator<JSONObject> finalUserinfoDs = mapUserInfoDs.filter(data -> data.containsKey("uid") &&!data.getString("uid").isEmpty());
+
+// 过滤掉uid为空的用户扩展信息数据
+
+        SingleOutputStreamOperator<JSONObject> finalUserinfoSupDs = mapUserInfoSupDs.filter(data -> data.containsKey("uid") &&!data.getString("uid").isEmpty());
+
+// 按用户ID对用户基本信息数据进行分组
 
         KeyedStream<JSONObject, String> keyedStreamUserInfoDs = finalUserinfoDs.keyBy(data -> data.getString("uid"));
-        KeyedStream<JSONObject, String> keyedStreamUserInfoSupDs = finalUserinfoSupDs.keyBy(data -> data.getString("uid"));
 
+// 按用户ID对用户扩展信息数据进行分组
+
+        KeyedStream<JSONObject, String> keyedStreamUserInfoSupDs = finalUserinfoSupDs.keyBy(data -> data.getString("uid"));
         // base6Line
 
         /*
@@ -376,23 +380,26 @@ public class DbusUserInfo6BaseLabel2Kafka {
 
         processIntervalJoinUserInfo6BaseMessageDs.print();
 
+// 将订单信息和详情模型数据发送到Kafka主题"kafka_label_base4_topic"
 //        processIntervalJoinUserInfo6BaseMessageDs.map(data -> data.toJSONString())
 //                        .sinkTo(
 //                                KafkaUtils.buildKafkaSink(kafka_botstrap_servers,"kafka_label_base6_topic")
 //                        );
-//
+//// 将订单信息和详情模型数据发送到Kafka主题"kafka_label_base4_topic"
 //        mapOrderInfoAndDetailModelDs.map(data -> data.toJSONString())
 //                        .sinkTo(
 //                                KafkaUtils.buildKafkaSink(kafka_botstrap_servers,"kafka_label_base4_topic")
 //                        );
-//
+// 将设备和搜索评分结果数据发送到Kafka主题"kafka_label_base2_topic"
 //        mapDeviceAndSearchRateResultDs.map(data -> data.toJSONString())
 //                        .sinkTo(
 //                                KafkaUtils.buildKafkaSink(kafka_botstrap_servers,"kafka_label_base2_topic")
 //                        );
-
+// 打印连接后的用户基本信息和扩展信息
         processIntervalJoinUserInfo6BaseMessageDs.print("processIntervalJoinUserInfo6BaseMessageDs: ");
+// 打印设备和搜索评分结果数据
         mapDeviceAndSearchRateResultDs.print("mapDeviceAndSearchRateResultDs: ");
+// 打印订单信息和详情模型数据
         mapOrderInfoAndDetailModelDs.print("mapOrderInfoAndDetailModelDs: ");
 
 
@@ -401,9 +408,12 @@ public class DbusUserInfo6BaseLabel2Kafka {
     }
 
 
+    // 计算年龄的方法
     private static int calculateAge(LocalDate birthDate, LocalDate currentDate) {
         return Period.between(birthDate, currentDate).getYears();
     }
+
+    // 根据出生日期获取星座的方法
 
     private static String getZodiacSign(LocalDate birthDate) {
         int month = birthDate.getMonthValue();
@@ -422,5 +432,6 @@ public class DbusUserInfo6BaseLabel2Kafka {
         else if (month == 9 || month == 10 && day <= 23) return "天秤座";
         else if (month == 10 || month == 11 && day <= 22) return "天蝎座";
         else return "射手座";
+
     }
 }
