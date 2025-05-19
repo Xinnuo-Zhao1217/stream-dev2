@@ -40,7 +40,6 @@ import java.util.List;
  */
 
 public class DbusUserInfo6BaseLabel2Kafka {
-
     // Kafka连接配置：从常量类获取Kafka集群地址
     private static final String kafka_botstrap_servers = Constant.KAFKA_BROKERS;
     // CDC变更数据主题：存储MySQL数据库变更记录（如用户信息、订单数据）
@@ -49,7 +48,6 @@ public class DbusUserInfo6BaseLabel2Kafka {
     private static final String kafka_page_log_topic = "realtime_v2_page_log";
 
     // 类目维度数据：存储三级类目关联信息（如"手机→智能手机→安卓手机"）
-
     private static final List<DimBaseCategory> dim_base_categories;
     // 数据库连接：用于读取维度表数据和写入结果
 
